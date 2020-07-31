@@ -7,11 +7,11 @@ public class Rocket {
   private int index;
   public string name;
   public float fuel = 20.0f;
-  private float fuelDecrease = 0.002f;
+  private float fuelDecrease = 0.003f;
   public float temperature = 0;
   private int[] temperatureThreshold = new int[] { 100, 200, 250 };
   private float temperatureDecrease = 0.04f;
-  private float temperatureIncrease = 0.05f;
+  private float temperatureIncrease = 0.06f;
   public string status = "deactivated";
   public float value;
   public bool active = false;
@@ -62,8 +62,8 @@ public class Rocket {
   }
   public void Update() {
     if (active) {
-      fuel = fuel - fuelDecrease;
       temperature = temperature + temperatureIncrease;
+      fuel = fuel - fuelDecrease;
       if (fuel <= 0) {
         fuel = 0;
         active = false;
@@ -76,10 +76,21 @@ public class Rocket {
       }
     }
 
+    CheckTemperature();
+    CheckHelp();
+
+
+    if (active != oldActive) {
+      oldActive = active;
+      UpdateOnce();
+    }
+  }
+
+  private void CheckTemperature() {
+    if (exploded) {
+      return;
+    }
     if (temperature > temperatureThreshold[0]) {
-      if (exploded) {
-        return;
-      }
       if (temperature > temperatureThreshold[2]) {
         active = false;
         exploded = true;
@@ -96,11 +107,12 @@ public class Rocket {
       warning_temperature.text = "";
       renderer.material.SetColor("_Color", Color.green);
     }
-
+  }
+  private void CheckHelp() {
+    if (stalled) {
+      return;
+    }
     if (fuel < 5) {
-      if (stalled) {
-        return;
-      }
       if (fuel <= 0) {
         active = false;
         stalled = true;
@@ -113,10 +125,6 @@ public class Rocket {
       }
     } else {
       warning_fuel.text = "";
-    }
-    if (active != oldActive) {
-      oldActive = active;
-      UpdateOnce();
     }
   }
 }

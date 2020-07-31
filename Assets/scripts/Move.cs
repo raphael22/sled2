@@ -8,29 +8,32 @@ public class Move : MonoBehaviour {
   private float initialAcceleration = 0.01f;
   public static float rocketAcceleration = 0;
   private float deceleration = 0;
-  private float decelerationMax = 0.08f;
+  private float decelerationMax = 0.1f;
   private float decelerationMin = 0.04f;
   private float decelerationInitial = 0.04f;
   private float velocity;
   private Rocket[] rockets;
   public GameObject player, finish;
   Collider player_collider, finish_collider;
-  private float timer = 0;
-  private bool done = false;
+  private float distance, highscore;
+  private bool started = false, done = false;
+  private int ratio = 100;
 
 
   // Start is called before the first frame update
   void Start() {
     rockets = new Rocket[4] {
-      new Rocket("Rocket_1", 0.01f, KeyCode.F1, 1),
-      new Rocket("Rocket_2", 0.01f, KeyCode.F2, 2),
-      new Rocket("Rocket_3", 0.01f, KeyCode.F3, 3),
-      new Rocket("Rocket_4", 0.01f, KeyCode.F4, 4)
+      new Rocket("Rocket_1", 0.01f, KeyCode.Alpha1, 1),
+      new Rocket("Rocket_2", 0.01f, KeyCode.Alpha2, 2),
+      new Rocket("Rocket_3", 0.01f, KeyCode.Alpha3, 3),
+      new Rocket("Rocket_4", 0.01f, KeyCode.Alpha4, 4)
     };
 
     player_collider = player.GetComponent<Collider>();
     finish_collider = finish.GetComponent<Collider>();
     Debug.Log(finish_collider.bounds);
+    highscore = PlayerPrefs.GetFloat("highscore");
+    GameObject.Find("Highscore").GetComponent<Text>().text = "HighScore: " + System.Math.Round(highscore).ToString();
   }
 
   void RocketLoop() {
@@ -48,7 +51,6 @@ public class Move : MonoBehaviour {
 
   void UiLoop() {
     var velocityUi = GameObject.Find("Velocity").GetComponent<Text>();
-    velocityUi.text = Mathf.Round(velocity * 200).ToString() + "Km/h";
 
     var rocketsUi = GameObject.Find("Rockets").GetComponent<Text>();
     var rocketsUiText = "";
@@ -57,11 +59,18 @@ public class Move : MonoBehaviour {
       rocketsUiText = rocketsUiText + "; " + rocket.name + ": " + rocket.status + " fuel: " + rocket.fuel + " temperature: " + rocket.temperature + "\n";
     }
     rocketsUi.text = rocketsUiText;
+
+    var newDistance = (player.transform.position.z);
+    var velocityHour = ((newDistance - distance) * ratio) * 3.6f;
+    velocityUi.text = Mathf.Round(velocityHour).ToString() + "Km/h";
+    distance = newDistance;
+    var Distance = GameObject.Find("Distance").GetComponent<Text>();
+    Distance.text = System.Math.Round(distance).ToString() + " meter";
   }
 
   void DecelerationLoop() {
 
-    deceleration = velocity * 0.1f;
+    deceleration = velocity * 0.12f;
     if (deceleration > decelerationMax) {
       deceleration = decelerationMax;
     }
@@ -90,36 +99,50 @@ public class Move : MonoBehaviour {
     }
 
     velocity = velocity + (Time.deltaTime * (acceleration + rocketAcceleration));
-    if (velocity < 0) {
-      velocity = 0;
-    }
 
-    if (player_collider.bounds.Intersects(finish_collider.bounds)) {
-      Debug.Log("collide");
-      velocity = 0;
-      done = true;
-    }
     gameObject.transform.Translate(0, 0, velocity);
-
   }
 
   // Update is called once per frame
   void Update() {
-    RocketLoop();
-
-    DecelerationLoop();
-
-    VelocityLoop();
-
-    UiLoop();
-
     if (!done) {
-      timer += Time.deltaTime;
-      var Timer = GameObject.Find("Timer").GetComponent<Text>();
-      Timer.text = System.Math.Round(timer, 2).ToString();
+
+      CheckScore();
+
+      RocketLoop();
+
+      DecelerationLoop();
+
+      VelocityLoop();
+
+      UiLoop();
     }
 
     // Debug.Log("velocity: " + velocity + " acceleration: " + acceleration + " deceleration: " + deceleration + " rocketV: " + rocketAcceleration);
+  }
+
+  void CheckScore() {
+    if (started && velocity < 0f) {
+      Debug.Log("!!!!!!!!!!!!!!!!!!!!!!!" + (started && velocity < 0f));
+      velocity = 0f;
+      started = false;
+      done = true;
+    }
+    if (velocity > 0.1f) {
+      started = true;
+    }
+    Debug.Log("velocity: " + velocity + " started " + started + " done " + done);
+
+    if (done) {
+      velocity = 0;
+      started = false;
+      if (highscore <= 0 || distance > highscore) {
+        highscore = distance;
+        PlayerPrefs.SetFloat("highscore", highscore);
+        Debug.Log("highscore: " + highscore);
+        GameObject.Find("Highscore").GetComponent<Text>().text = "HighScore: " + System.Math.Round(highscore).ToString();
+      }
+    }
   }
 
 }
